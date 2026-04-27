@@ -1,0 +1,109 @@
+{
+  "name": "file-watcher-logger",
+  "displayName": "File Watcher Logger",
+  "description": "Отслеживает все изменения файлов в активной директории и логирует их",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "fileWatcherLogger.start",
+        "title": "File Watcher: Start File Watching"
+      },
+      {
+        "command": "fileWatcherLogger.stop",
+        "title": "File Watcher: Stop File Watching"
+      },
+      {
+        "command": "fileWatcherLogger.showLog",
+        "title": "File Watcher: Show Log"
+      },
+      {
+        "command": "fileWatcherLogger.clearLog",
+        "title": "File Watcher: Clear Log"
+      },
+      {
+        "command": "fileWatcherLogger.startKeystroke",
+        "title": "File Watcher: Start Keystroke Tracking (Buffered)"
+      },
+      {
+        "command": "fileWatcherLogger.startKeystrokeDetailed",
+        "title": "File Watcher: Start Keystroke Tracking (Every Char)"
+      },
+      {
+        "command": "fileWatcherLogger.stopKeystroke",
+        "title": "File Watcher: Stop Keystroke Tracking"
+      },
+      {
+        "command": "fileWatcherLogger.startAll",
+        "title": "File Watcher: Start Everything"
+      },
+      {
+        "command": "fileWatcherLogger.stopAll",
+        "title": "File Watcher: Stop Everything"
+      }
+    ],
+    "configuration": {
+      "title": "File Watcher Logger",
+      "properties": {
+        "fileWatcherLogger.logToFile": {
+          "type": "boolean",
+          "default": true,
+          "description": "Сохранять логи в файл"
+        },
+        "fileWatcherLogger.logFilePath": {
+          "type": "string",
+          "default": ".file-watcher.log",
+          "description": "Путь к файлу логов (относительно workspace)"
+        },
+        "fileWatcherLogger.excludePatterns": {
+          "type": "array",
+          "default": [
+            "**/node_modules/**",
+            "**/.git/**",
+            "**/out/**",
+            "**/.file-watcher.log"
+          ],
+          "description": "Паттерны файлов для исключения"
+        },
+        "fileWatcherLogger.includePatterns": {
+          "type": "string",
+          "default": "**/*",
+          "description": "Паттерн файлов для отслеживания"
+        },
+        "fileWatcherLogger.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Автоматически начинать отслеживание при открытии workspace"
+        },
+        "fileWatcherLogger.timestampFormat": {
+          "type": "string",
+          "default": "full",
+          "enum": ["full", "time", "iso"],
+          "description": "Формат временных меток"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.22.0"
+  }
+}
