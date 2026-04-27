@@ -1,99 +1,59 @@
 import * as vscode from 'vscode';
-import { Logger } from './logger';
-import { FileWatcher } from './fileWatcher';
+import { SessionService } from './sessionService';
+import { SidebarViewProvider } from './sidebarViewProvider';
+import { SessionStartInput } from './types';
 
-let logger: Logger;
-let fileWatcher: FileWatcher;
+let sessionService: SessionService | undefined;
 
-export function activate(context: vscode.ExtensionContext) {
-    console.log('File Watcher Logger активирован');
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
+    sessionService = new SessionService(context);
+    await sessionService.initialize();
 
-    // Создаём логгер
-    logger = new Logger(context);
-
-    // Создаём наблюдатель за файлами
-    fileWatcher = new FileWatcher(context, logger);
-
-    // === Регистрация команд ===
-
-    // Команда: Начать отслеживание
-    const startCommand = vscode.commands.registerCommand(
-        'fileWatcherLogger.start',
-        () => {
-            fileWatcher.start();
-        }
+    const sidebarProvider = new SidebarViewProvider(sessionService);
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(
+            SidebarViewProvider.viewId,
+            sidebarProvider
+        )
     );
 
-    // Команда: Остановить отслеживание
-    const stopCommand = vscode.commands.registerCommand(
-        'fileWatcherLogger.stop',
-        () => {
-            fileWatcher.stop();
-        }
-    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'tracker.startSession',
+            async (input?: SessionStartInput) => {
+                if (!input) {
+                    void vscode.window.showInformationMessage(
+                        'Для запуска сессии используйте боковую панель Трекера.'
+                    );
+                    return;
+                }
 
-    // Команда: Показать лог
-    const showLogCommand = vscode.commands.registerCommand(
-        'fileWatcherLogger.showLog',
-        () => {
-            logger.show();
-        }
-    );
-
-    // Команда: Очистить лог
-    const clearLogCommand = vscode.commands.registerCommand(
-        'fileWatcherLogger.clearLog',
-        async () => {
-            const answer = await vscode.window.showWarningMessage(
-                'Очистить все логи?',
-                'Да',
-                'Нет'
-            );
-
-            if (answer === 'Да') {
-                logger.clear();
-                vscode.window.showInformationMessage('Логи очищены');
+                await sessionService?.startSession(input);
             }
-        }
+        )
     );
 
-    // Добавляем команды в подписки
-    context.subscriptions.push(startCommand);
-    context.subscriptions.push(stopCommand);
-    context.subscriptions.push(showLogCommand);
-    context.subscriptions.push(clearLogCommand);
+    context.subscriptions.push(
+        vscode.commands.registerCommand('tracker.finishSession', async () => {
+            await sessionService?.finishSession();
+        })
+    );
 
-    // Отслеживаем изменения конфигурации
-    const configChangeDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('fileWatcherLogger')) {
-            logger.logInfo('Конфигурация File Watcher изменена');
+    context.subscriptions.push(
+        vscode.commands.registerCommand('tracker.openAdmin', async () => {
+            await sessionService?.openAdminPanel();
+        })
+    );
 
-            // Перезапускаем watcher при изменении настроек
-            if (fileWatcher.getIsWatching()) {
-                logger.logInfo('Перезапуск watcher с новыми настройками...');
-                fileWatcher.stop();
-                fileWatcher.start();
-            }
-        }
-    });
-    context.subscriptions.push(configChangeDisposable);
+    context.subscriptions.push(
+        vscode.commands.registerCommand('tracker.revealSessionFolder', async () => {
+            await sessionService?.revealSessionFolder();
+        })
+    );
 
-    // Автозапуск если настроено
-    const config = vscode.workspace.getConfiguration('fileWatcherLogger');
-    if (config.get<boolean>('autoStart', true)) {
-        fileWatcher.start();
-        logger.show();
-    }
-
-    logger.logInfo('🚀 Расширение File Watcher Logger загружено');
+    context.subscriptions.push(sessionService);
 }
 
-export function deactivate() {
-    if (fileWatcher) {
-        fileWatcher.dispose();
-    }
-    if (logger) {
-        logger.logInfo('Расширение деактивировано');
-        logger.dispose();
-    }
+export function deactivate(): void {
+    sessionService?.dispose();
 }
